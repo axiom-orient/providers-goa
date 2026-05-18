@@ -1,0 +1,18 @@
+# Binaries
+/bin/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+coverage.out
+coverage.html
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
