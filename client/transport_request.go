@@ -103,7 +103,7 @@ func (c *Client) applyChatGPTHeaders(req *http.Request, stream bool) {
 	} else {
 		req.Header.Set("Accept", "application/json")
 	}
-	req.Header.Set("version", defaultChatGPTVersion)
+	req.Header.Set("version", c.chatGPTClientVersion())
 	if c != nil {
 		c.authMu.Lock()
 		accountID := strings.TrimSpace(c.accountID)
@@ -121,7 +121,7 @@ func (c *Client) buildChatGPTModelsRequest(ctx context.Context) (*http.Request, 
 		return nil, err
 	}
 	query := parsed.Query()
-	query.Set("client_version", defaultChatGPTClientVer)
+	query.Set("client_version", c.chatGPTClientVersion())
 	parsed.RawQuery = query.Encode()
 	req, err := c.newRequestURL(ctx, http.MethodGet, parsed.String(), nil)
 	if err != nil {
@@ -129,6 +129,13 @@ func (c *Client) buildChatGPTModelsRequest(ctx context.Context) (*http.Request, 
 	}
 	c.applyChatGPTHeaders(req, false)
 	return req, nil
+}
+
+func (c *Client) chatGPTClientVersion() string {
+	if c != nil && strings.TrimSpace(c.cfg.ChatGPTClientVersion) != "" {
+		return strings.TrimSpace(c.cfg.ChatGPTClientVersion)
+	}
+	return defaultChatGPTClientVer
 }
 
 func (c *Client) buildChatGPTResponsesRequest(ctx context.Context, body []byte) (*http.Request, error) {

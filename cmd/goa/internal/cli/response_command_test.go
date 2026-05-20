@@ -25,7 +25,7 @@ func TestRunSendStreamsRefusal(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
-	code := app.Run(context.Background(), []string{"send", "--model", "gpt-test", "--input", "hello", "--stream", "--api-key", "sk-test", "--base-url", srv.URL})
+	code := app.Run(context.Background(), []string{"codex", "--auth-path", writeCLIAuth(t), "--base-url", srv.URL, "send", "hello", "--model", "gpt-test", "--stream"})
 	if code != 0 {
 		t.Fatalf("unexpected exit code: %d stderr=%q", code, stderr.String())
 	}
@@ -53,7 +53,7 @@ func TestRunSendStreamErrorReturnsNonZero(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
-	code := app.Run(context.Background(), []string{"send", "--model", "gpt-test", "--input", "hello", "--stream", "--api-key", "sk-test", "--base-url", srv.URL})
+	code := app.Run(context.Background(), []string{"codex", "--auth-path", writeCLIAuth(t), "--base-url", srv.URL, "send", "hello", "--model", "gpt-test", "--stream"})
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -67,14 +67,15 @@ func TestRunSendStreamErrorReturnsNonZero(t *testing.T) {
 
 func TestRunResponsesCreateRefusalPrintsRefusal(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"id":"resp_1","object":"response","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"refusal","refusal":"cannot comply"}]}]}`)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "event: response.completed\n")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_1\",\"object\":\"response\",\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"refusal\",\"refusal\":\"cannot comply\"}]}]}}\n\n")
 	}))
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
-	code := app.Run(context.Background(), []string{"responses", "create", "--model", "gpt-test", "--input", "hello", "--api-key", "sk-test", "--base-url", srv.URL})
+	code := app.Run(context.Background(), []string{"codex", "--auth-path", writeCLIAuth(t), "--base-url", srv.URL, "send", "hello", "--model", "gpt-test"})
 	if code != 0 {
 		t.Fatalf("unexpected exit code: %d stderr=%q", code, stderr.String())
 	}
@@ -85,15 +86,16 @@ func TestRunResponsesCreateRefusalPrintsRefusal(t *testing.T) {
 
 func TestRunResponsesCreateFailedReturnsNonZero(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("x-request-id", "req_failed_123")
-		fmt.Fprint(w, `{"id":"resp_1","object":"response","status":"failed","error":{"code":"server_error","message":"backend exploded"}}`)
+		fmt.Fprint(w, "event: response.completed\n")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_1\",\"object\":\"response\",\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"backend exploded\"}}}\n\n")
 	}))
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
-	code := app.Run(context.Background(), []string{"responses", "create", "--model", "gpt-test", "--input", "hello", "--api-key", "sk-test", "--base-url", srv.URL})
+	code := app.Run(context.Background(), []string{"codex", "--auth-path", writeCLIAuth(t), "--base-url", srv.URL, "send", "hello", "--model", "gpt-test"})
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -118,7 +120,7 @@ func TestRunSendStreamJSONIncludesRequestID(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
-	code := app.Run(context.Background(), []string{"send", "--model", "gpt-test", "--input", "hello", "--stream", "--json", "--api-key", "sk-test", "--base-url", srv.URL})
+	code := app.Run(context.Background(), []string{"codex", "--auth-path", writeCLIAuth(t), "--base-url", srv.URL, "send", "hello", "--model", "gpt-test", "--stream", "--json"})
 	if code != 0 {
 		t.Fatalf("unexpected exit code: %d stderr=%q", code, stderr.String())
 	}

@@ -501,9 +501,9 @@ func oauthCallbackErrorMessage(errorCode, description string) string {
 
 func apiKeyExchangeFailurePageMessage(err error) string {
 	if err != nil && strings.Contains(err.Error(), "organization_id") {
-		return "Sign-in succeeded, but OpenAI Platform setup is incomplete for API-key issuance. Complete organization/project setup or use an explicit OPENAI_API_KEY, then retry."
+		return "Sign-in succeeded, but OpenAI Platform setup is incomplete for credential issuance. Complete organization/project setup or provide a valid auth.json, then retry."
 	}
-	return "Sign-in succeeded but the API-key exchange failed. Return to the application for details."
+	return "Sign-in succeeded but credential exchange failed. Return to the application for details."
 }
 
 func writeReloginHTML(w http.ResponseWriter, status int, body string) {

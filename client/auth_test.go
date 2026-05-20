@@ -116,8 +116,8 @@ func TestAPIKeyResolutionPrecedence(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Setenv(defaultAPIKeyEnv, "sk-env")
-	client, err := NewClient(Config{AuthPath: path})
+	t.Setenv("OPENAI_API_KEY", "sk-env")
+	client, err := NewClient(Config{AuthPath: path, APIKeyEnv: "OPENAI_API_KEY"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestAPIKeyResolutionPrecedence(t *testing.T) {
 		t.Fatalf("want config source, got %q", got)
 	}
 
-	t.Setenv(defaultAPIKeyEnv, "")
+	t.Setenv("OPENAI_API_KEY", "")
 	client, err = NewClient(Config{AuthPath: path})
 	if err != nil {
 		t.Fatal(err)

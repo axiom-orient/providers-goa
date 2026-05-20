@@ -8,12 +8,11 @@ import (
 
 const (
 	defaultBaseURL          = "https://api.openai.com"
-	defaultAPIKeyEnv        = "OPENAI_API_KEY"
 	defaultChatGPTBaseURL   = "https://chatgpt.com"
 	defaultChatGPTResponses = "/backend-api/codex/responses"
 	defaultChatGPTModels    = "/backend-api/codex/models"
-	defaultChatGPTVersion   = "0.3.0"
-	defaultChatGPTClientVer = "0.99.0"
+	defaultChatGPTVersion   = "0.130.0"
+	defaultChatGPTClientVer = "0.130.0"
 	defaultAuthIssuerURL    = "https://auth.openai.com"
 	defaultOAuthClientID    = "app_EMoamEEZ73f0CkXaXp7hrann"
 )
@@ -23,11 +22,17 @@ type Config struct {
 	// BaseURL defaults to https://api.openai.com.
 	BaseURL string
 
-	// APIKey takes highest precedence when non-empty.
+	// APIKey takes highest precedence when non-empty unless PreferChatGPT is set.
 	APIKey string
 
-	// APIKeyEnv defaults to OPENAI_API_KEY.
+	// APIKeyEnv is optional. Leave empty to avoid process environment API-key lookup.
 	APIKeyEnv string
+
+	// PreferChatGPT selects file-backed ChatGPT/Codex credentials over API-key sources.
+	PreferChatGPT bool
+
+	// ChatGPTClientVersion overrides the backend models client_version query value.
+	ChatGPTClientVersion string
 
 	// AuthPath points directly to auth.json.
 	AuthPath string
@@ -66,9 +71,6 @@ func (c Config) normalized() Config {
 		c.BaseURL = defaultBaseURL
 	}
 	c.BaseURL = strings.TrimRight(c.BaseURL, "/")
-	if c.APIKeyEnv == "" {
-		c.APIKeyEnv = defaultAPIKeyEnv
-	}
 	if c.UserAgent == "" {
 		c.UserAgent = DefaultUserAgent()
 	}

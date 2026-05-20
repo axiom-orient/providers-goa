@@ -6,6 +6,22 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-05-20
+
+### Changed
+- Public CLI is now explicit provider paths: `goa codex ...` and `goa gemini ...`.
+- Codex CLI LLM calls use ChatGPT/Codex credentials from the resolved `auth.json`.
+- Removed public API-key CLI guidance and root-level legacy command shortcuts.
+- Added package-local Gemini Core Adapter support for `gemini models` and `gemini generate`.
+
+### Verified
+- `go test ./...`
+- `go vet ./...`
+- `go list ./...`
+- `go build ./...`
+- `cd gemini-core-adapter && npm install && npm run build && npm audit --omit=dev`
+- Live Codex and Gemini credential smoke checks.
+
 ## [v0.1.0] - 2026-05-16
 
 ### Added

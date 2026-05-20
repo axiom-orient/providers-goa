@@ -104,11 +104,20 @@ func executeRelogin(ctx context.Context, input reloginInput, app *App) error {
 		return err
 	}
 	if input.asJSON {
-		if code := app.writeJSON(map[string]any{"event": "relogin_completed", "outcome": outcome}); code != 0 {
+		completed := map[string]any{
+			"event":             "relogin_completed",
+			"auth_url":          outcome.AuthURL,
+			"callback_port":     outcome.CallbackPort,
+			"persisted_to":      outcome.PersistedTo,
+			"transport":         outcome.AuthState.Transport,
+			"has_refresh_token": outcome.AuthState.HasRefreshToken,
+			"has_account_id":    outcome.AuthState.HasAccountID,
+		}
+		if code := app.writeJSON(completed); code != 0 {
 			return fmt.Errorf("failed to write JSON output")
 		}
 		return nil
 	}
-	fmt.Fprintf(app.Stdout, "relogin: completed\npersisted_to: %s\ntransport: %s\nhas_api_key: %t\n", outcome.PersistedTo, outcome.AuthState.Transport, outcome.AuthState.HasAPIKey)
+	fmt.Fprintf(app.Stdout, "relogin=completed\npersisted_to=%s\ntransport=%s\nhas_refresh_token=%t\n", outcome.PersistedTo, outcome.AuthState.Transport, outcome.AuthState.HasRefreshToken)
 	return nil
 }

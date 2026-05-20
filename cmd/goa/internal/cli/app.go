@@ -19,6 +19,11 @@ func New(stdout, stderr io.Writer) *App {
 
 // Run executes the CLI and returns a process exit code.
 func (a *App) Run(ctx context.Context, args []string) int {
+	globalJSON := false
+	if len(args) > 0 && args[0] == "--json" {
+		globalJSON = true
+		args = args[1:]
+	}
 	if len(args) == 0 {
 		a.printRootHelp()
 		return 0
@@ -28,20 +33,14 @@ func (a *App) Run(ctx context.Context, args []string) int {
 	case "-h", "--help", "help":
 		a.printRootHelp()
 		return 0
-	case "auth":
-		return a.runAuth(ctx, args[1:])
-	case "relogin":
-		return a.runRelogin(ctx, args[1:])
+	case "codex":
+		return a.runCodex(ctx, args[1:], globalJSON)
+	case "gemini":
+		return a.runGemini(args[1:], globalJSON)
 	case "version":
 		return a.runVersion(args[1:])
-	case "models":
-		return a.runModels(ctx, args[1:])
-	case "responses":
-		return a.runResponses(ctx, args[1:])
-	case "send":
-		return a.runSend(ctx, args[1:])
 	default:
-		fmt.Fprintf(a.Stderr, "unknown command: %s\n\n", args[0])
+		fmt.Fprintf(a.Stderr, "unknown provider: %s\n\n", args[0])
 		a.printRootHelp()
 		return 2
 	}
@@ -51,19 +50,21 @@ func (a *App) printRootHelp() {
 	fmt.Fprint(a.Stdout, `goa
 
 Usage:
-  goa auth status [--auth-path <path>] [--auth-home <dir>] [--json]
-  goa relogin [--no-browser] [--callback-port <port>] [--timeout-seconds <seconds>] [--persist-path <path>] [--issuer <url>] [--client-id <id>] [--allowed-workspace-id <id>] [--auth-path <path>] [--auth-home <dir>] [--json]
+  goa [--json] codex [--auth-path <path>] [--auth-home <dir>] [--base-url <url>] [--client-version <version>] <command>
+  goa [--json] gemini <command>
   goa version [--json]
-  goa models list [--api-key <key>] [--base-url <url>] [--organization <org>] [--project <project>] [--client-request-id <id>] [--auth-path <path>] [--auth-home <dir>] [--json]
-  goa responses create --model <model-id> --input <text> [--instructions <text>] [--stream] [--api-key <key>] [--base-url <url>] [--organization <org>] [--project <project>] [--client-request-id <id>] [--auth-path <path>] [--auth-home <dir>] [--json]
-  goa send --model <model-id> --input <text> [--instructions <text>] [--stream] [--api-key <key>] [--base-url <url>] [--organization <org>] [--project <project>] [--client-request-id <id>] [--auth-path <path>] [--auth-home <dir>] [--json]
 
 Commands:
-  auth status        Inspect resolved auth state
-  relogin            Refresh auth cache through browser OAuth
+  codex send         Send a prompt with the resolved auth.json credential
+  codex models list  List Codex models
+  codex auth status  Inspect resolved auth.json state
+  codex relogin      Refresh auth.json through browser OAuth
+  gemini generate    Generate text through Gemini CLI Core
+  gemini models      List Gemini models through Gemini CLI Core
   version            Print build version metadata
-  models list        Call GET /v1/models
-  responses create   Call POST /v1/responses
-  send               Alias for responses create
+
+Rules:
+  codex uses ChatGPT/Codex credentials from resolved auth.json
+  gemini uses package-local gemini-core-adapter and Gemini CLI Core auth
 `)
 }

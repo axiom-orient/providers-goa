@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,20 +22,20 @@ func TestRunHelp(t *testing.T) {
 		t.Fatalf("unexpected exit code: %d", code)
 	}
 	out := stdout.String()
-	if !strings.Contains(out, "responses create") {
+	if !strings.Contains(out, "codex send") {
 		t.Fatalf("unexpected help output: %q", out)
 	}
-	if !strings.Contains(out, "goa send") {
-		t.Fatalf("help should mention send alias: %q", out)
+	if !strings.Contains(out, "goa [--json] gemini") {
+		t.Fatalf("help should mention gemini provider: %q", out)
 	}
-	if !strings.Contains(out, "goa relogin") {
+	if !strings.Contains(out, "codex relogin") {
 		t.Fatalf("help should mention browser relogin: %q", out)
 	}
 }
 
 func TestRunSendStreamsText(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/responses" {
+		if r.URL.Path != "/backend-api/codex/responses" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -56,12 +58,13 @@ func TestRunSendStreamsText(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	app := New(&stdout, &stderr)
 	code := app.Run(context.Background(), []string{
-		"send",
-		"--model", "gpt-test",
-		"--input", "hello",
-		"--stream",
-		"--api-key", "sk-test",
+		"codex",
+		"--auth-path", writeCLIAuth(t),
 		"--base-url", srv.URL,
+		"send",
+		"hello",
+		"--model", "gpt-test",
+		"--stream",
 	})
 	if code != 0 {
 		t.Fatalf("unexpected exit code: %d stderr=%q", code, stderr.String())
@@ -72,6 +75,16 @@ func TestRunSendStreamsText(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("unexpected stderr: %q", stderr.String())
 	}
+}
+
+func writeCLIAuth(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "auth.json")
+	err := os.WriteFile(path, []byte(`{"auth_mode":"chatgpt","tokens":{"access_token":"tok-test","refresh_token":"refresh-test","account_id":"acc-test"}}`), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestRunHelpIncludesVersion(t *testing.T) {

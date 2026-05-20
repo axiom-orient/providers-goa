@@ -171,6 +171,24 @@ func resolveAuthState(cfg Config) (AuthState, resolvedAuth, error) {
 		state.HasAccountID = summary.HasAccountID
 	}
 
+	if cfg.PreferChatGPT {
+		resolved.transport = authTransportChatGPT
+		state.Transport = string(authTransportChatGPT)
+		if state.AuthFileFound && state.AuthFileReadError == "" && state.AuthFileParseError == "" {
+			obj, readErr := authjson.ReadObject(state.AuthPath)
+			if readErr == nil {
+				creds := authjson.ExtractChatGPTCredentials(obj)
+				if strings.TrimSpace(creds.AccessToken) != "" || strings.TrimSpace(creds.RefreshToken) != "" {
+					resolved.accessToken = strings.TrimSpace(creds.AccessToken)
+					resolved.refreshToken = strings.TrimSpace(creds.RefreshToken)
+					resolved.idToken = strings.TrimSpace(creds.IDToken)
+					resolved.accountID = strings.TrimSpace(creds.AccountID)
+				}
+			}
+		}
+		return state, resolved, nil
+	}
+
 	if cfg.APIKey != "" {
 		state.APIKeySource = APIKeySourceConfig
 		state.HasAPIKey = true
@@ -179,12 +197,15 @@ func resolveAuthState(cfg Config) (AuthState, resolvedAuth, error) {
 		return state, resolved, nil
 	}
 
-	if envKey := os.Getenv(cfg.APIKeyEnv); envKey != "" {
-		state.APIKeySource = APIKeySourceEnv
-		state.HasAPIKey = true
-		state.Transport = string(authTransportOpenAI)
-		resolved.apiKey = envKey
-		return state, resolved, nil
+	if cfg.APIKeyEnv != "" {
+		envKey := os.Getenv(cfg.APIKeyEnv)
+		if envKey != "" {
+			state.APIKeySource = APIKeySourceEnv
+			state.HasAPIKey = true
+			state.Transport = string(authTransportOpenAI)
+			resolved.apiKey = envKey
+			return state, resolved, nil
+		}
 	}
 
 	if state.AuthFileFound && state.AuthFileReadError == "" && state.AuthFileParseError == "" {

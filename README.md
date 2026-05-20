@@ -1,81 +1,69 @@
 # goa
 
-`goa` is a Go module with a public `client` SDK, the `appserver` stdio JSON-RPC client, and the `goa` CLI.
+`goa` is a Go module and CLI for explicit provider paths:
 
-## quick start
+- `goa codex ...` uses ChatGPT/Codex credentials from the resolved `auth.json`.
+- `goa gemini ...` uses the package-local Gemini Core Adapter around upstream `@google/gemini-cli-core`.
+- `appserver/` remains a separate Codex app-server stdio JSON-RPC package.
+
+## Build
 
 ```bash
 go test ./...
 go vet ./...
 go list ./...
 go build ./...
+
+cd gemini-core-adapter
+npm install
+npm run build
+npm audit --omit=dev
+cd ..
+```
+
+## CLI
+
+```bash
 go run ./cmd/goa --help
-go run ./cmd/goa version
+
+go run ./cmd/goa codex auth status
+go run ./cmd/goa codex models list
+go run ./cmd/goa codex send "Reply with exactly OK" --model gpt-5.4
+go run ./cmd/goa codex send "Count from 1 to 3" --stream --model gpt-5.4
+printf 'Reply with exactly OK\n' | go run ./cmd/goa codex send --stdin --model gpt-5.4
+
+go run ./cmd/goa codex relogin --no-browser --callback-port 1455
+go run ./cmd/goa codex --auth-path /tmp/auth.json auth status
+go run ./cmd/goa codex --client-version 0.130.0 models list
+
+go run ./cmd/goa gemini models
+go run ./cmd/goa gemini generate "Reply with exactly OK" --model flash
 ```
 
-Model listing:
+Add global `--json` for automation:
 
 ```bash
-export OPENAI_API_KEY=sk-...
-go run ./cmd/goa models list
+go run ./cmd/goa --json codex auth status
+go run ./cmd/goa --json codex send "Reply with exactly OK" --model gpt-5.4
+go run ./cmd/goa --json gemini generate "Reply with exactly OK" --model flash
 ```
 
-Single response:
+## Runtime Rules
 
-```bash
-go run ./cmd/goa responses create \
-  --model <model-id> \
-  --input "Say hello in one sentence."
-```
+- Codex auth resolves from explicit `--auth-path`, explicit `--auth-home`, `$CODEX_HOME/auth.json`,
+  then `~/.codex/auth.json`.
+- The CLI uses ChatGPT/Codex credentials in the resolved `auth.json` for the main LLM call path.
+- `goa gemini ...` uses Gemini CLI Core's own Google/Gemini auth path through the adapter.
+- Codex and Gemini do not share login state, model discovery, or transport code.
+- Gemini commands require `gemini-core-adapter/dist/main.js`, built with `npm run build` inside
+  `gemini-core-adapter`.
 
-Browser re-login:
+## Packages
 
-```bash
-go run ./cmd/goa relogin --no-browser --callback-port 0
-```
+- `github.com/axiom-orient/providers-goa/client`: Go SDK for Codex/Responses and Gemini adapter clients.
+- `github.com/axiom-orient/providers-goa/appserver`: Codex app-server stdio JSON-RPC client.
+- `github.com/axiom-orient/providers-goa/cmd/goa`: CLI entrypoint.
 
-Streaming response:
+## Docs
 
-```bash
-go run ./cmd/goa send \
-  --model <model-id> \
-  --input "Count from 1 to 5." \
-  --stream
-```
-
-Optional request headers:
-
-```bash
-go run ./cmd/goa send \
-  --model <model-id> \
-  --input "Say hello." \
-  --organization <org_id> \
-  --project <project_id> \
-  --client-request-id $(uuidgen)
-```
-
-## packages
-
-- `github.com/axiom-orient/providers-goa/client`: OpenAI Responses + ChatGPT backend SDK
-- `github.com/axiom-orient/providers-goa/appserver`: Codex app-server stdio JSON-RPC client
-- `github.com/axiom-orient/providers-goa/cmd/goa`: CLI entrypoint
-
-## supports
-
-- `GET /v1/models`
-- `POST /v1/responses`
-- SSE response streaming
-- structured output helpers for `text.format` JSON schema / JSON object modes
-- response `request_id` metadata and optional org/project/client request headers
-- auth discovery from `OPENAI_API_KEY` and `auth.json`
-- ChatGPT backend model listing and response sends via `auth.json`
-- safe ChatGPT auth refresh on model-list preflight with schema-aware `auth.json` persistence
-- browser OAuth re-login via `client.ReloginBrowser` and `goa relogin`
-- Codex app-server JSON-RPC client under `appserver/`
-
-## module path policy
-
-The public module path is `github.com/axiom-orient/providers-goa`.
-
-## docs
-- `docs/README.md`: current package notes, boundaries, change policy, and verification commands
+- `docs/README.md`: current package notes, boundaries, change policy, and verification commands.

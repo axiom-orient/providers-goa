@@ -38,7 +38,7 @@ func (a *App) runModels(ctx context.Context, args []string) int {
 }
 
 func parseModelsListInput(stderr io.Writer, args []string) (modelsListInput, error) {
-	fs := flag.NewFlagSet("goa models list", flag.ContinueOnError)
+	fs := flag.NewFlagSet("goa codex models list", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	flags := bindClientFlags(fs, true)
 	asJSON := fs.Bool("json", false, "emit JSON")

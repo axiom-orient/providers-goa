@@ -8,10 +8,11 @@ import (
 )
 
 type clientFlags struct {
-	apiKey          string
 	baseURL         string
 	authPath        string
 	authHome        string
+	issuer          string
+	clientVersion   string
 	organization    string
 	project         string
 	clientRequestID string
@@ -19,15 +20,16 @@ type clientFlags struct {
 
 func bindClientFlags(fs *flag.FlagSet, includeRequestID bool) *clientFlags {
 	flags := &clientFlags{}
-	fs.StringVar(&flags.apiKey, "api-key", "", "OpenAI API key")
-	fs.StringVar(&flags.baseURL, "base-url", "", "override API base URL")
-	fs.StringVar(&flags.organization, "organization", "", "OpenAI organization header")
-	fs.StringVar(&flags.project, "project", "", "OpenAI project header")
+	fs.StringVar(&flags.baseURL, "base-url", "", "override Responses base URL")
+	fs.StringVar(&flags.organization, "organization", "", "optional organization header")
+	fs.StringVar(&flags.project, "project", "", "optional project header")
 	if includeRequestID {
 		fs.StringVar(&flags.clientRequestID, "client-request-id", "", "X-Client-Request-Id header")
 	}
 	fs.StringVar(&flags.authPath, "auth-path", "", "path to auth.json")
 	fs.StringVar(&flags.authHome, "auth-home", "", "directory containing auth.json")
+	fs.StringVar(&flags.issuer, "issuer", "", "OAuth issuer URL")
+	fs.StringVar(&flags.clientVersion, "client-version", "", "ChatGPT backend models client_version")
 	return flags
 }
 
@@ -36,12 +38,14 @@ func (f *clientFlags) config() goa.Config {
 		return goa.Config{}
 	}
 	return goa.Config{
-		APIKey:       f.apiKey,
-		BaseURL:      f.baseURL,
-		AuthPath:     f.authPath,
-		AuthHome:     f.authHome,
-		Organization: f.organization,
-		Project:      f.project,
+		BaseURL:              f.baseURL,
+		AuthPath:             f.authPath,
+		AuthHome:             f.authHome,
+		AuthIssuerURL:        f.issuer,
+		ChatGPTClientVersion: f.clientVersion,
+		PreferChatGPT:        true,
+		Organization:         f.organization,
+		Project:              f.project,
 	}
 }
 

@@ -1,44 +1,37 @@
 # goa docs
 
-`goa` is the Go provider package. It contains the `client` SDK, the `goa` CLI, and the auxiliary `appserver` JSON-RPC package.
+`goa` is the Go provider package. It contains the `client` SDK, the `goa` CLI, the package-local Gemini Core Adapter, and the auxiliary `appserver` JSON-RPC package.
 
 ## Package Map
 
-- `go.mod`: local module path is `goa`; public Go releases must rewrite this to a real VCS module path.
-- `client/`: SDK core for auth discovery, model listing, Responses create/send, streaming, structured output, diagnostics, refresh, and browser relogin.
+- `go.mod`: public module path `github.com/axiom-orient/providers-goa`.
+- `client/`: SDK core for auth discovery, model listing, Responses create/send, streaming, structured output, diagnostics, refresh, browser relogin, and Gemini adapter calls.
 - `client/internal/authjson/`: schema-aware `auth.json` rewrite helpers.
-- `client/internal/chatgptwire/`: ChatGPT backend wire parsing.
+- `client/internal/chatgptwire/`: ChatGPT backend request and SSE wire parsing.
 - `cmd/goa/`: CLI adapter over `client`.
+- `gemini-core-adapter/`: TypeScript JSON-RPC adapter around upstream `@google/gemini-cli-core`.
 - `appserver/`: separate public package for Codex app-server stdio JSON-RPC.
 
 ## Boundaries
 
+- Public CLI commands live under `goa codex ...` and `goa gemini ...`.
+- Codex CLI LLM calls use ChatGPT/Codex credentials from the resolved `auth.json`.
 - CLI code must call the SDK instead of duplicating auth or HTTP transport.
 - Only `client/internal/authjson` should rewrite known `auth.json` fields.
+- Gemini code must not read Codex auth, invoke Codex relogin, or use Codex Responses transports.
 - ChatGPT response sends must not auto-retry mutation `POST /responses` after a 401.
 - Browser relogin is explicit SDK/CLI behavior, not a hidden send side effect.
 - `appserver` is public but auxiliary; provider core behavior lives in `client`.
+- GitHub CI is not part of this repository's verification workflow.
 
 ## Verification
 
 ```bash
-gofmt -l $(find . -name '*.go' -not -path './.git/*')
+gofmt -l $(find . -name '*.go' -not -path './.git/*' -not -path './gemini-core-adapter/node_modules/*')
 go test ./...
 go vet ./...
+go list ./...
 go build ./...
+cd gemini-core-adapter && npm install && npm run build && npm audit --omit=dev && cd ..
 go run ./cmd/goa --help
 ```
-
-## GitHub Release
-
-Target repository and module path:
-
-```text
-github.com/axiom-orient/providers-goa
-```
-
-Before tagging a public Go release, set the module path in the split GitHub repository to `github.com/axiom-orient/providers-goa`.
-
-## Known Release Constraint
-
-The checked-in module path `goa` is local-only. The GitHub release copy must use `github.com/axiom-orient/providers-goa` before it is tagged.

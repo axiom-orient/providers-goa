@@ -29,12 +29,12 @@ func (e usageError) Error() string { return e.message }
 
 func (a *App) runResponses(ctx context.Context, args []string) int {
 	if len(args) == 0 {
-		fmt.Fprintln(a.Stderr, "missing subcommand: responses create")
+		fmt.Fprintln(a.Stderr, "missing subcommand: codex send")
 		return 2
 	}
 	switch args[0] {
 	case "create":
-		return a.runResponseCommand(ctx, "goa responses create", args[1:])
+		return a.runResponseCommand(ctx, "goa codex send", args[1:])
 	default:
 		fmt.Fprintf(a.Stderr, "unknown responses subcommand: %s\n", args[0])
 		return 2
@@ -42,7 +42,7 @@ func (a *App) runResponses(ctx context.Context, args []string) int {
 }
 
 func (a *App) runSend(ctx context.Context, args []string) int {
-	return a.runResponseCommand(ctx, "goa send", args)
+	return a.runResponseCommand(ctx, "goa codex send", args)
 }
 
 func (a *App) runResponseCommand(ctx context.Context, name string, args []string) int {
